@@ -1,6 +1,6 @@
 const graphql = require('graphql')
 
-const {GraphQLObjectType, GraphQLString, GraphQLSchema, GraphQLID, GraphQLInt, GraphQLList} = graphql
+const {GraphQLObjectType, GraphQLString, GraphQLSchema, GraphQLID, GraphQLInt, GraphQLBoolean ,GraphQLList} = graphql
 
 
 /*
@@ -11,26 +11,26 @@ const directorsJson = [
   {"_id":{"$oid":"5f784319534368eb09df2e64"},"name":"James McTeigue","age":{"$numberInt":"51"}}
   {"_id":{"$oid":"5f784325534368eb09df2fe1"},"name":"Guy Ritchie","age":{"$numberInt":"50"}}
 ];
-// directorId - it is ID from the directors collection
+// director - it is ID from the directors collection
 const moviesJson = [
-  { "name": "Pulp Fiction", "genre": "Crime", "directorId": "5f7842c5534368eb09df23ba" },
-  { "name": "1984", "genre": "Sci-Fi", "directorId": "5f78430c534368eb09df2cd8" },
-  { "name": "V for vendetta", "genre": "Sci-Fi-Triller", "directorId": "5f784319534368eb09df2e64" },
-  { "name": "Snatch", "genre": "Crime-Comedy", "directorId": "5f7842c5534368eb09df23ba" },
-  { "name": "Reservoir Dogs", "genre": "Crime", "directorId": "5f7842c5534368eb09df23ba" },
-  { "name": "The Hateful Eight", "genre": "Crime", "directorId": "5f78430c534368eb09df2cd8" },
-  { "name": "Inglourious Basterds", "genre": "Crime", "directorId": "5f784319534368eb09df2e64" },
-  { "name": "Lock, Stock and Two Smoking Barrels", "genre": "Crime-Comedy", "directorId": "5f784325534368eb09df2fe1" },
+  { "name": "Pulp Fiction", "genre": "Crime", "director": "5f7842c5534368eb09df23ba" },
+  { "name": "1984", "genre": "Sci-Fi", "director": "5f78430c534368eb09df2cd8" },
+  { "name": "V for vendetta", "genre": "Sci-Fi-Triller", "director": "5f784319534368eb09df2e64" },
+  { "name": "Snatch", "genre": "Crime-Comedy", "director": "5f7842c5534368eb09df23ba" },
+  { "name": "Reservoir Dogs", "genre": "Crime", "director": "5f7842c5534368eb09df23ba" },
+  { "name": "The Hateful Eight", "genre": "Crime", "director": "5f78430c534368eb09df2cd8" },
+  { "name": "Inglourious Basterds", "genre": "Crime", "director": "5f784319534368eb09df2e64" },
+  { "name": "Lock, Stock and Two Smoking Barrels", "genre": "Crime-Comedy", "director": "5f784325534368eb09df2fe1" },
 ];
 const movies = [
-  { id: '1', name: "Pulp Fiction", genre: "Crime", directorId: "1" },
-  { id: '2', name: "1984", genre: "Sci-Fi", directorId: "2" },
-  { id: '3', name: "V for vendetta", genre: "Sci-Fi-Triller", directorId: "3" },
-  { id: '4', name: "Snatch", genre: "Crime-Comedy", directorId: "4" },
-  { id: '5', name: "Reservoir Dogs", genre: "Crime", directorId: "1" },
-  { id: '6', name: "The Hateful Eight", genre: "Crime", directorId: "1" },
-  { id: '7', name: "Inglourious Basterds", genre: "Crime", directorId: "1" },
-  { id: '8', name: "Lock, Stock and Two Smoking Barrels", genre: "Crime-Comedy", directorId: "4" },
+  { id: '1', name: "Pulp Fiction", genre: "Crime", director: "1" },
+  { id: '2', name: "1984", genre: "Sci-Fi", director: "2" },
+  { id: '3', name: "V for vendetta", genre: "Sci-Fi-Triller", director: "3" },
+  { id: '4', name: "Snatch", genre: "Crime-Comedy", director: "4" },
+  { id: '5', name: "Reservoir Dogs", genre: "Crime", director: "1" },
+  { id: '6', name: "The Hateful Eight", genre: "Crime", director: "1" },
+  { id: '7', name: "Inglourious Basterds", genre: "Crime", director: "1" },
+  { id: '8', name: "Lock, Stock and Two Smoking Barrels", genre: "Crime-Comedy", director: "4" },
 ];
 const directors = [
 	{ id: '1', name: "Quentin Tarantino", age: 55 },
@@ -53,12 +53,15 @@ const MoviesType = new GraphQLObjectType({
         id: {type: GraphQLID},
         name: {type: GraphQLString},
         genre: {type: GraphQLString},
+        rate: {type: GraphQLInt},
+        watched: {type: GraphQLBoolean},
+
         // Связь по id с таблицей Режиссеров
-        directorId: {
+        director: {
             type: DirectorsType,
             resolve(parent, args) {
                 //return directors.find(dir => dir.id === parent.id)
-                return Directors.findById(parent.id)
+                return Directors.findById(parent.director)
             }
         }
     })
@@ -76,8 +79,8 @@ const DirectorsType = new GraphQLObjectType({
         movies: {
             type: GraphQLList(MoviesType),
             resolve(parent, args) {
-                //return movies.filter(movie => movie.directorId === parent.id)
-                return Movies.findById(parent.id)
+                //return movies.filter(movie => movie.director === parent.id)
+                return Movies.find({ director: parent.id})
             }
         }
     })
@@ -100,9 +103,10 @@ const Query = new GraphQLObjectType({
 
         movies: {
             type: GraphQLList(MoviesType),
+            args: { name: { type: GraphQLString}},
             resolve(parent, args) {
                 //return movies
-                return Movies.find({})
+                return Movies.find({ name: { $regex: args.name, $options: "i"}})
             }
         },
 
@@ -117,9 +121,10 @@ const Query = new GraphQLObjectType({
 
         directors: {
             type: GraphQLList(DirectorsType),
+            args: { name : {type: GraphQLString }},
             resolve(parent, args) {
                 //return directors
-                return Directors.find({})
+                return Directors.find({ name: { $regex: args.name, $options: "i"}})
             }
         },
     }
@@ -137,13 +142,17 @@ const Mutation = new GraphQLObjectType({
             args: {
                 name: {type: GraphQLString},
                 genre: {type: GraphQLString},
-                directorId: {type: GraphQLString},
+                director: {type: GraphQLString},
+                rate: {type: GraphQLInt},
+                watched: {type: GraphQLBoolean},
             },
             resolve(parent, args) {
                 const movie = new Movies({
                     name: args.name,
                     genre: args.genre,
-                    directorId: args.directorId
+                    director: args.director,
+                    rate: args.rate,
+                    watched: args.watched,
                 })
                 return movie.save()
             }
@@ -165,13 +174,21 @@ const Mutation = new GraphQLObjectType({
                 id: {type: GraphQLID},
                 name: {type: GraphQLString},
                 genre: {type: GraphQLString},
-                directorId: {type: GraphQLString},
+                director: {type: GraphQLString},
+                rate: {type: GraphQLInt},
+                watched: {type: GraphQLBoolean},
             },
             resolve(parent, args) {
                 return Movies.findByIdAndUpdate(
                     args.id,
                     {
-                        $set: {name: args.name, genre: args.genre, directorId: args.directorId}
+                        $set: {
+                            name: args.name,
+                            genre: args.genre,
+                            director: args.director,
+                            rate: args.rate,
+                            watched: args.watched,
+                        }
                     },
                     {new: true}
                 )
