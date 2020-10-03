@@ -22,7 +22,7 @@ app.use('/graphql', graphqlHTTP({
 // });
 
 
-mongoose.connect('mongodb+srv://admin:root@cluster0.zoiyn.mongodb.net/graphQL?retryWrites=true&w=majority')
+mongoose.connect('mongodb+srv://admin:root@cluster0.zoiyn.mongodb.net/graphQL?retryWrites=true&w=majority',  { useNewUrlParser: true, useUnifiedTopology: true } )
 const dbConnect = mongoose.connection
 dbConnect.on('error', err => console.log(err));
 dbConnect.once('open', ()=>console.log('Connected to DB'))
